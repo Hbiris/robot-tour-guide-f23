@@ -43,8 +43,11 @@ def main():
 
   # labels = [0, 1, 2, ...]
   # waypoints = [[0, 0, 0], [9, 2, 8], [3, 6, 4], ...]
+  if not labels or not waypoints:
+        print("Error: Labels and waypoints are not properly loaded.")
+        sys.exit(1)
 
-
+  while(True):
   # NOTE: To get the cropped image of a post-it from the camera, do:
   #
   #     frame = ch.get_processed_image()
@@ -54,7 +57,15 @@ def main():
   # function. It will be the last image labeled 08_bordered_frame_X.jpg. Check out
   # the previous images to understand how the preprocessing step works. This might 
   # slow down execution slightly. 
-  
+    # Get processed image from the camera
+        frame = ch.get_processed_image(save=True)  # Save the processed frame for debugging
+        if frame is None:
+            print("No digit detected. Skipping...")
+            continue
+
+        # Predict the label using the model
+        predicted_label = model.predict([frame])[0]
+        print(f"Detected label: {predicted_label}")
   
   # NOTE: To plan a path to a goal position (x and y, in meters), do:
   #
@@ -66,13 +77,28 @@ def main():
   #
   # You must turn to the theta after x, y location is reached.
   
-
   # TODO: Your code here!
   # Write your code to detect the label on a poster at a given waypoint, and use
   # the result to determine which waypoint to visit next. You will need to use the
   # "labels" and "waypoints" variables! When the robot reads a poster with label "0",
   # it should return to the start position (0, 0, 0) and the program should exit.
-  
+  # Handle label "0" (return to start and stop)
+        if predicted_label == 0:
+            print("Returning to start position...")
+            plan_to_pose(0, 0, robot)
+            turn_to_theta(0, robot)
+            print("Task complete. Exiting...")
+            break
+        
+        # Get the corresponding waypoint
+        waypoint_index = labels.index(predicted_label)
+        target_waypoint = waypoints[waypoint_index]
+        x, y, theta = target_waypoint
+
+        # Move to the waypoint
+        print(f"Moving to waypoint {target_waypoint}...")
+        plan_to_pose(x, y, robot)
+        turn_to_theta(theta, robot)
 
 if __name__ == '__main__':
     main()
